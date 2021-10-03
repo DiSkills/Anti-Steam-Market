@@ -22,6 +22,7 @@ class SteamBot:
 
     def __init__(self) -> None:
         self._options = webdriver.FirefoxOptions()
+        self._options.headless = True
         self._driver = webdriver.Firefox(executable_path=fr'{driver_url}', options=self._options)
         self._username = os.environ.get('USERNAME_STEAM')
         self._password = os.environ.get('PASSWORD_STEAM')
