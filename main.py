@@ -1,5 +1,5 @@
 import json
-import os.path
+import os
 import re
 import sys
 import time
