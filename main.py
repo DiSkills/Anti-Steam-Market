@@ -1,3 +1,4 @@
+import json
 import os.path
 import re
 import time
@@ -68,12 +69,13 @@ class SteamBot:
                 time.sleep(3)
                 driver.find_element_by_css_selector('[data-modalstate="complete"]').click()
 
-            driver.implicitly_wait(5)
+            driver.implicitly_wait(15)
 
         driver.find_element_by_class_name('user_avatar').click()
 
     def inventory(self):
         driver = self._driver
+        driver.maximize_window()
 
         driver.implicitly_wait(5)
         driver.get(driver.current_url + 'inventory')
@@ -102,6 +104,7 @@ class SteamBot:
         ).text
         count = int(re.findall('\d+', marketable_count)[0])
         driver.refresh()
+        sold_items = []
 
         for i in range(count):
             driver.find_element_by_id('filter_tag_show').click()
@@ -117,6 +120,7 @@ class SteamBot:
                     price_block = driver.find_elements_by_css_selector(
                         'div#iteminfo0_item_market_actions > div > div'
                     )[1].text
+                    name = driver.find_element_by_id('iteminfo0_item_name').text
                     try:
                         price = re.findall('\d+\,\d+', price_block)[0]
                     except IndexError:
@@ -143,13 +147,27 @@ class SteamBot:
 
                     if self.xpath_exist('//*[@id="market_sell_dialog_ok"]'):
                         driver.find_element_by_xpath('//*[@id="market_sell_dialog_ok"]').click()
-                        driver.refresh()
-                        time.sleep(5)
-                        break
+                    driver.refresh()
+                    sold_items.append({'name': name, 'price': f'{price} rub'})
+                    time.sleep(5)
+                    break
+        return sold_items
+
+    def save_json(self, data):
+        with open('result.json', 'w') as file:
+            json.dump(data, file)
+
+    def run(self):
+        try:
+            self.login()
+            sold_items = self.inventory()
+            self.save_json(sold_items)
+        except Exception as _ex:
+            print(_ex)
+        finally:
+            self.close_browser()
 
 
 if __name__ == '__main__':
     bot = SteamBot()
-    bot.login()
-    bot.inventory()
-    # bot.close_browser()
+    bot.run()
