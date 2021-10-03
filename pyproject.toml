@@ -7,6 +7,7 @@ authors = ["_Counter021_"]
 [tool.poetry.dependencies]
 python = "^3.9"
 selenium = "^3.141.0"
+python-dotenv = "^0.19.0"
 
 [tool.poetry.dev-dependencies]
 
