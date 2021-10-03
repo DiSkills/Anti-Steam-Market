@@ -162,6 +162,7 @@ class SteamBot:
             self.login()
             sold_items = self.inventory()
             self.save_json(sold_items)
+            print('Success! Check file result.json for detail sold')
         except Exception as _ex:
             print(_ex)
         finally:
