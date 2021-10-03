@@ -1,6 +1,7 @@
 import json
 import os.path
 import re
+import sys
 import time
 
 from dotenv import load_dotenv
@@ -10,6 +11,10 @@ from selenium.common.exceptions import NoSuchElementException
 driver_url = os.path.abspath('geckodriver')
 url = 'https://store.steampowered.com/'
 load_dotenv('config.env')
+
+if not (os.environ.get('USERNAME_STEAM') and os.environ.get('PASSWORD_STEAM')):
+    print('Steam username and steam password not found')
+    sys.exit()
 
 
 class SteamBot:
