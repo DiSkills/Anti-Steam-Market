@@ -1,4 +1,5 @@
 import os.path
+import re
 import time
 
 from dotenv import load_dotenv
@@ -71,8 +72,41 @@ class SteamBot:
 
         driver.find_element_by_class_name('user_avatar').click()
 
+    def inventory(self):
+        driver = self._driver
+
+        driver.implicitly_wait(5)
+        driver.get(driver.current_url + 'inventory')
+        driver.implicitly_wait(5)
+
+        games = driver.find_elements_by_xpath('//span[@class="games_list_tab_name"]')
+        for i in range(len(games)):
+            print(f'{i + 1} - {games[i].text}')
+        while True:
+            select_game = input('Select game for sell items: ')
+            if select_game.isdigit():
+                select_game = int(select_game)
+                if 0 < select_game <= len(games):
+                    break
+        current_game = select_game - 1
+        games[current_game].click()
+        driver.implicitly_wait(5)
+
+        driver.find_element_by_id('filter_tag_show').click()
+        driver.implicitly_wait(3)
+        if not self.xpath_exist('//input[@id="tag_filter_753_6_misc_marketable"]'):
+            raise ValueError('The game has no items to sell')
+        driver.find_element_by_id('tag_filter_753_6_misc_marketable').click()
+        time.sleep(3)
+
+        for item in driver.find_elements_by_class_name('itemHolder'):
+            if not item.is_displayed():
+                continue
+            item.click()
+
 
 if __name__ == '__main__':
     bot = SteamBot()
     bot.login()
+    bot.inventory()
     bot.close_browser()
