@@ -1,4 +1,5 @@
 import os.path
+import time
 
 from dotenv import load_dotenv
 from selenium import webdriver
@@ -36,8 +37,12 @@ class SteamBot:
         driver.find_element_by_class_name('global_action_link').click()
         driver.implicitly_wait(5)
 
-        driver.find_element_by_xpath('//input[@id="input_username"]').send_keys(self._username)
-        driver.find_element_by_xpath('//input[@id="input_password"]').send_keys(self._password)
+        username = driver.find_element_by_xpath('//input[@id="input_username"]')
+        username.clear()
+        username.send_keys(self._username)
+        password = driver.find_element_by_xpath('//input[@id="input_password"]')
+        password.clear()
+        password.send_keys(self._password)
         driver.implicitly_wait(3)
 
         driver.find_element_by_xpath('//button[@type="submit"]').click()
@@ -45,9 +50,23 @@ class SteamBot:
 
         if self.xpath_exist('//input[@id="twofactorcode_entry"]'):
             code = input('Please input 2-factor code: ')
-            driver.find_element_by_xpath('//input[@id="twofactorcode_entry"]').send_keys(code)
-            driver.implicitly_wait(2)
-            driver.find_element_by_id('login_twofactorauth_buttonset_entercode').find_element_by_class_name('leftbtn').click()
+            if driver.find_element_by_xpath('//input[@id="twofactorcode_entry"]').is_displayed():
+                code_otp = driver.find_element_by_xpath('//input[@id="twofactorcode_entry"]')
+                code_otp.clear()
+                code_otp.send_keys(code)
+                driver.implicitly_wait(2)
+                driver.find_element_by_id('login_twofactorauth_buttonset_entercode')\
+                    .find_element_by_class_name('leftbtn').click()
+            else:
+                code_otp = driver.find_element_by_xpath('//input[@id="authcode"]')
+                code_otp.clear()
+                code_otp.send_keys(code)
+                driver.implicitly_wait(2)
+                driver.find_element_by_id('auth_buttonset_entercode')\
+                    .find_element_by_class_name('leftbtn').click()
+                time.sleep(3)
+                driver.find_element_by_css_selector('[data-modalstate="complete"]').click()
+
             driver.implicitly_wait(5)
 
         driver.find_element_by_class_name('user_avatar').click()
