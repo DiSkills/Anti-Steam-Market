@@ -34,7 +34,7 @@ class SteamBot:
         except NoSuchElementException:
             return False
 
-    def login(self):
+    def login(self) -> None:
         """ Login in Steam """
         driver = self._driver
         driver.get(url)
@@ -78,7 +78,7 @@ class SteamBot:
 
         driver.find_element_by_class_name('user_avatar').click()
 
-    def inventory(self):
+    def inventory(self) -> list[dict[str, str]]:
         """ Inventory """
         driver = self._driver
         driver.maximize_window()
@@ -165,12 +165,12 @@ class SteamBot:
         return sold_items
 
     @staticmethod
-    def save_json(data):
+    def save_json(data: list[dict[str, str]]) -> None:
         """ Save result to json file """
         with open('result.json', 'w') as file:
             json.dump(data, file, indent=4, ensure_ascii=False)
 
-    def run(self):
+    def run(self) -> None:
         """ Start bot """
         try:
             self.login()
