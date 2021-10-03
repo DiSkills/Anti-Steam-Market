@@ -13,6 +13,7 @@ load_dotenv('config.env')
 
 
 class SteamBot:
+    """ Bot """
 
     def __init__(self) -> None:
         self._options = webdriver.FirefoxOptions()
@@ -21,10 +22,12 @@ class SteamBot:
         self._password = os.environ.get('PASSWORD_STEAM')
 
     def close_browser(self) -> None:
+        """ Close browser """
         self._driver.close()
         self._driver.quit()
 
-    def xpath_exist(self, xpath):
+    def xpath_exist(self, xpath: str) -> bool:
+        """ Element with xpath exist? """
         try:
             self._driver.find_element_by_xpath(xpath)
             return True
@@ -32,6 +35,7 @@ class SteamBot:
             return False
 
     def login(self):
+        """ Login in Steam """
         driver = self._driver
         driver.get(url)
         driver.implicitly_wait(5)
@@ -50,6 +54,7 @@ class SteamBot:
         driver.find_element_by_xpath('//button[@type="submit"]').click()
         driver.implicitly_wait(5)
 
+        # 2-step auth
         if self.xpath_exist('//input[@id="twofactorcode_entry"]'):
             code = input('Please input 2-factor code: ')
             if driver.find_element_by_xpath('//input[@id="twofactorcode_entry"]').is_displayed():
@@ -74,6 +79,7 @@ class SteamBot:
         driver.find_element_by_class_name('user_avatar').click()
 
     def inventory(self):
+        """ Inventory """
         driver = self._driver
         driver.maximize_window()
 
@@ -81,6 +87,7 @@ class SteamBot:
         driver.get(driver.current_url + 'inventory')
         driver.implicitly_wait(5)
 
+        # Select game for sell items
         games = driver.find_elements_by_xpath('//span[@class="games_list_tab_name"]')
         for i in range(len(games)):
             print(f'{i + 1} - {games[i].text}')
@@ -94,6 +101,7 @@ class SteamBot:
         games[current_game].click()
         driver.implicitly_wait(5)
 
+        # If not sold items
         driver.find_element_by_id('filter_tag_show').click()
         driver.implicitly_wait(3)
         if not self.xpath_exist('//input[@id="tag_filter_753_6_misc_marketable"]'):
@@ -113,6 +121,7 @@ class SteamBot:
             time.sleep(3)
 
             for item in driver.find_elements_by_class_name('itemHolder'):
+                # Only sold items
                 if item.is_displayed():
                     item.click()
                     time.sleep(5)
@@ -121,12 +130,14 @@ class SteamBot:
                         'div#iteminfo0_item_market_actions > div > div'
                     )[1].text
                     name = driver.find_element_by_id('iteminfo0_item_name').text
+                    # If no one sells item
                     try:
                         price = re.findall('\d+\,\d+', price_block)[0]
                     except IndexError:
                         continue
                     driver.implicitly_wait(3)
 
+                    # If price item > 45 rub
                     if float(price.replace(',', '.')) > 45:
                         continue
 
@@ -153,11 +164,14 @@ class SteamBot:
                     break
         return sold_items
 
-    def save_json(self, data):
+    @staticmethod
+    def save_json(data):
+        """ Save result to json file """
         with open('result.json', 'w') as file:
-            json.dump(data, file)
+            json.dump(data, file, indent=4, ensure_ascii=False)
 
     def run(self):
+        """ Start bot """
         try:
             self.login()
             sold_items = self.inventory()
