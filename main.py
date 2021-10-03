@@ -96,17 +96,60 @@ class SteamBot:
         driver.implicitly_wait(3)
         if not self.xpath_exist('//input[@id="tag_filter_753_6_misc_marketable"]'):
             raise ValueError('The game has no items to sell')
-        driver.find_element_by_id('tag_filter_753_6_misc_marketable').click()
-        time.sleep(3)
 
-        for item in driver.find_elements_by_class_name('itemHolder'):
-            if not item.is_displayed():
-                continue
-            item.click()
+        marketable_count = driver.find_element_by_css_selector(
+            'label[for="tag_filter_753_6_misc_marketable"] > span.econ_tag_count'
+        ).text
+        count = int(re.findall('\d+', marketable_count)[0])
+        driver.refresh()
+
+        for i in range(count):
+            driver.find_element_by_id('filter_tag_show').click()
+            driver.implicitly_wait(3)
+            driver.find_element_by_id('tag_filter_753_6_misc_marketable').click()
+            time.sleep(3)
+
+            for item in driver.find_elements_by_class_name('itemHolder'):
+                if item.is_displayed():
+                    item.click()
+                    time.sleep(5)
+
+                    price_block = driver.find_elements_by_css_selector(
+                        'div#iteminfo0_item_market_actions > div > div'
+                    )[1].text
+                    try:
+                        price = re.findall('\d+\,\d+', price_block)[0]
+                    except IndexError:
+                        continue
+                    driver.implicitly_wait(3)
+
+                    if float(price.replace(',', '.')) > 45:
+                        continue
+
+                    driver.find_element_by_class_name('item_market_action_button_contents').click()
+                    driver.implicitly_wait(5)
+
+                    input_market_price = driver.find_element_by_id('market_sell_buyercurrency_input')
+                    input_market_price.clear()
+                    input_market_price.send_keys(price)
+
+                    checkbox = driver.find_element_by_css_selector('input#market_sell_dialog_accept_ssa')
+                    if not checkbox.get_attribute('checked'):
+                        checkbox.click()
+
+                    driver.implicitly_wait(3)
+                    driver.find_element_by_css_selector('a#market_sell_dialog_accept').click()
+                    driver.implicitly_wait(3)
+
+                    if self.xpath_exist('//*[@id="market_sell_dialog_ok"]'):
+                        driver.find_element_by_xpath('//*[@id="market_sell_dialog_ok"]').click()
+                        driver.refresh()
+                        time.sleep(5)
+                        break
 
 
 if __name__ == '__main__':
     bot = SteamBot()
     bot.login()
     bot.inventory()
-    bot.close_browser()
+    # bot.close_browser()
