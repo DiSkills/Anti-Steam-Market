@@ -1,4 +1,4 @@
-# Steam Market sell bot
+# Anti-Steam Market: market sell bot
 
 ![Python percent](https://img.shields.io/github/languages/top/Counter0021/steam-market-bot)
 ![Python version](https://img.shields.io/badge/python-3.9.5-green)
