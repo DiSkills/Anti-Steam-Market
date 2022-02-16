@@ -1,5 +1,6 @@
 import json
 import os
+import pickle
 import re
 import sys
 import time
@@ -9,7 +10,10 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 
 driver_url = os.path.abspath('geckodriver')
-url = 'https://store.steampowered.com/'
+
+url = 'https://steamcommunity.com/'
+COOKIES_FILE = 'cookies'
+
 load_dotenv('config.env')
 
 if not (os.environ.get('USERNAME_STEAM') and os.environ.get('PASSWORD_STEAM')):
@@ -18,22 +22,24 @@ if not (os.environ.get('USERNAME_STEAM') and os.environ.get('PASSWORD_STEAM')):
 
 
 class SteamBot:
-    """ Bot """
+    """ Steam bot """
 
     def __init__(self) -> None:
         self._options = webdriver.FirefoxOptions()
         self._options.headless = True
         self._driver = webdriver.Firefox(executable_path=fr'{driver_url}', options=self._options)
-        self._username = os.environ.get('USERNAME_STEAM')
-        self._password = os.environ.get('PASSWORD_STEAM')
+        self._username = os.environ.get('USERNAME_STEAM', 'USERNAME_STEAM')
+        self._password = os.environ.get('PASSWORD_STEAM', 'PASSWORD_STEAM')
 
     def close_browser(self) -> None:
         """ Close browser """
+
         self._driver.close()
         self._driver.quit()
 
     def xpath_exist(self, xpath: str) -> bool:
         """ Element with xpath exist? """
+
         try:
             self._driver.find_element_by_xpath(xpath)
             return True
@@ -42,9 +48,17 @@ class SteamBot:
 
     def login(self) -> None:
         """ Login in Steam """
+
         driver = self._driver
         driver.get(url)
         driver.implicitly_wait(5)
+
+        if os.path.exists(COOKIES_FILE):
+            self.set_cookies()
+            driver.refresh()
+            driver.implicitly_wait(5)
+            driver.find_element_by_class_name('user_avatar').click()
+            return
 
         driver.find_element_by_class_name('global_action_link').click()
         driver.implicitly_wait(5)
@@ -68,14 +82,14 @@ class SteamBot:
                 code_otp.clear()
                 code_otp.send_keys(code)
                 driver.implicitly_wait(2)
-                driver.find_element_by_id('login_twofactorauth_buttonset_entercode')\
+                driver.find_element_by_id('login_twofactorauth_buttonset_entercode') \
                     .find_element_by_class_name('leftbtn').click()
             else:
                 code_otp = driver.find_element_by_xpath('//input[@id="authcode"]')
                 code_otp.clear()
                 code_otp.send_keys(code)
                 driver.implicitly_wait(2)
-                driver.find_element_by_id('auth_buttonset_entercode')\
+                driver.find_element_by_id('auth_buttonset_entercode') \
                     .find_element_by_class_name('leftbtn').click()
                 time.sleep(3)
                 driver.find_element_by_css_selector('[data-modalstate="complete"]').click()
@@ -83,9 +97,24 @@ class SteamBot:
             driver.implicitly_wait(15)
 
         driver.find_element_by_class_name('user_avatar').click()
+        self.save_cookies()
+
+    def save_cookies(self) -> None:
+        """ Save cookies """
+
+        with open(COOKIES_FILE, 'wb') as file:
+            pickle.dump(self._driver.get_cookies(), file)
+
+    def set_cookies(self) -> None:
+        """ Set cookies """
+
+        with open(COOKIES_FILE, 'rb') as file:
+            for cookie in pickle.load(file):
+                self._driver.add_cookie(cookie)
 
     def inventory(self) -> list[dict[str, str]]:
         """ Inventory """
+
         driver = self._driver
         driver.maximize_window()
 
@@ -110,11 +139,11 @@ class SteamBot:
         # If not sold items
         driver.find_element_by_id('filter_tag_show').click()
         driver.implicitly_wait(3)
-        if not self.xpath_exist('//input[@id="tag_filter_753_6_misc_marketable"]'):
+        if not self.xpath_exist('//input[@tag_name="marketable"]'):
             raise ValueError('The game has no items to sell')
 
-        marketable_count = driver.find_element_by_css_selector(
-            'label[for="tag_filter_753_6_misc_marketable"] > span.econ_tag_count'
+        marketable_count = driver.find_element_by_xpath(
+            '//div[./input[@tag_name="marketable"]]/label[@class="econ_tag_filter_label"]/span[@class="econ_tag_count"]'
         ).text
         count = int(re.findall('\d+', marketable_count)[0])
         driver.refresh()
@@ -123,7 +152,7 @@ class SteamBot:
         for i in range(count):
             driver.find_element_by_id('filter_tag_show').click()
             driver.implicitly_wait(3)
-            driver.find_element_by_id('tag_filter_753_6_misc_marketable').click()
+            driver.find_element_by_xpath('//input[@tag_name="marketable"]').click()
             time.sleep(3)
 
             for item in driver.find_elements_by_class_name('itemHolder'):
@@ -173,11 +202,13 @@ class SteamBot:
     @staticmethod
     def save_json(data: list[dict[str, str]]) -> None:
         """ Save result to json file """
+
         with open('result.json', 'w') as file:
             json.dump(data, file, indent=4, ensure_ascii=False)
 
     def run(self) -> None:
         """ Start bot """
+
         try:
             self.login()
             sold_items = self.inventory()
