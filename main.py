@@ -1,6 +1,7 @@
 import json
 import os
 import pickle
+import platform
 import re
 import sys
 import time
@@ -10,6 +11,9 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 
 driver_url = os.path.abspath('geckodriver')
+
+if platform.system() == 'Windows':
+    driver_url = os.path.abspath('windows/geckodriver.exe')
 
 url = 'https://steamcommunity.com/'
 COOKIES_FILE = 'cookies'
